@@ -1,64 +1,462 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>IMPRESSORAS LT3</title> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IMPRESSORAS LT3</title>
     <!-- BY: PABLO - ESTAGIÁRIO LT3, GitHub @qzsousa -->
-    <!-- Usando versões mais robustas e com fallback -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <link rel="stylesheet" href="style.css">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg:      #080c14;
+            --surface: #0f1623;
+            --surface2:#18223a;
+            --border:  #1e2d4a;
+            --accent:  #3b82f6;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger:  #ef4444;
+            --text:    #f0f4ff;
+            --muted:   #4a6080;
+            --dim:     #7a90b0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ── HEADER ── */
+        header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+
+        .header-title {
+            font-size: .95rem;
+            font-weight: 700;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--dim);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        #badge-update {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .75rem;
+            color: var(--dim);
+        }
+
+        .dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+        #countdown-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .72rem;
+            color: var(--muted);
+        }
+
+        #countdown-bar-outer {
+            width: 72px; height: 3px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        #countdown-bar-inner {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 2px;
+            transition: width .9s linear;
+        }
+
+        /* ── CARDS — ocupa toda a altura disponível em F11 ── */
+        #cards-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px 24px 16px;
+            min-height: 0;
+        }
+
+        #cards {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px;
+            min-height: 0;
+        }
+
+        @media (max-width: 1100px) { #cards { grid-template-columns: repeat(2,1fr); } }
+        @media (max-width: 580px)  { #cards { grid-template-columns: 1fr; } }
+
+        /* ── CARD ── */
+        .card {
+            background: var(--surface);
+            border: 1.5px solid var(--border);
+            border-radius: 20px;
+            padding: 20px 20px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            position: relative;
+            overflow: hidden;
+            transition: border-color .25s;
+            min-height: 0;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            border-radius: 20px 20px 0 0;
+        }
+
+        .card.ok::before    { background: var(--success); }
+        .card.warn::before  { background: var(--warning); }
+        .card.limit::before { background: var(--danger);  }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        /* Nome — grande e legível na TV */
+        .card-name {
+            font-size: clamp(1.4rem, 2.2vw, 2rem);
+            font-weight: 900;
+            letter-spacing: -.01em;
+            text-transform: uppercase;
+            line-height: 1;
+        }
+
+        .card-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: .75rem;
+            font-weight: 700;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            padding: 4px 12px;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+
+        .card-status.ok    { background:#16a34a20; color:var(--success); border:1px solid #16a34a50; }
+        .card-status.warn  { background:#d9770620; color:var(--warning); border:1px solid #d9770650; }
+        .card-status.limit { background:#dc262620; color:var(--danger);  border:1px solid #dc262650; }
+
+        /* DONUT — elemento principal, cresce para preencher o card */
+        .card-donut {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            min-height: 0;
+        }
+
+        .card-donut canvas {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        /* Número central sobre o donut */
+        .donut-center {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .donut-perc {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: clamp(1.6rem, 2.8vw, 2.6rem);
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .donut-perc.ok    { color: var(--success); }
+        .donut-perc.warn  { color: var(--warning); }
+        .donut-perc.limit { color: var(--danger);  }
+
+        .donut-label {
+            font-size: clamp(.6rem, .9vw, .75rem);
+            font-weight: 600;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        /* Barra de progresso */
+        .progress-wrap {
+            background: var(--surface2);
+            border-radius: 6px;
+            height: 8px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .progress-bar {
+            height: 100%;
+            border-radius: 6px;
+            transition: width .6s ease;
+        }
+
+        .progress-bar.ok    { background: var(--success); }
+        .progress-bar.warn  { background: var(--warning); }
+        .progress-bar.limit { background: var(--danger);  }
+
+        /* Meta linha */
+        .card-meta {
+            display: flex;
+            justify-content: space-between;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: clamp(.65rem, .9vw, .78rem);
+            color: var(--dim);
+            flex-shrink: 0;
+        }
+
+        .card-meta strong { color: var(--text); font-weight: 600; }
+
+        /* ── RELATÓRIO (abaixo do fold) ── */
+        #relatorio-section {
+            padding: 0 24px 36px;
+        }
+
+        .section-label {
+            font-size: .68rem;
+            font-weight: 700;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .relatorio-container {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 24px;
+        }
+
+        .filtro-mes {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .filtro-mes label { font-size:.8rem; color:var(--dim); font-weight:500; }
+
+        .filtro-mes select {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: .85rem;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .filtro-mes select:focus { border-color: var(--accent); }
+
+        .btn-pdf {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-size: .83rem;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: opacity .2s;
+        }
+
+        .btn-pdf:hover { opacity:.85; }
+
+        .grafico-mensal { max-height: 280px; margin-bottom: 20px; }
+
+        table { width:100%; border-collapse:collapse; font-size:.83rem; }
+
+        th {
+            background: var(--surface2);
+            color: var(--dim);
+            font-weight:600;
+            font-size:.7rem;
+            letter-spacing:.08em;
+            text-transform:uppercase;
+            padding:10px 14px;
+            text-align:left;
+            border-bottom:1px solid var(--border);
+        }
+
+        td {
+            padding:10px 14px;
+            border-bottom:1px solid var(--border);
+            color:var(--dim);
+            font-family:'JetBrains Mono',monospace;
+            font-size:.8rem;
+        }
+
+        tr:last-child td { border-bottom:none; }
+        tr:hover td { background: var(--surface2); }
+
+        .erro {
+            color:var(--danger);
+            background:#dc262610;
+            border:1px solid #dc262630;
+            padding:14px 18px;
+            border-radius:10px;
+            font-size:.9rem;
+            grid-column:1/-1;
+        }
+
+        #loading {
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            gap:10px;
+            padding:60px;
+            color:var(--muted);
+            font-size:.9rem;
+            grid-column:1/-1;
+        }
+
+        .spinner {
+            width:18px; height:18px;
+            border:2px solid var(--border);
+            border-top-color:var(--accent);
+            border-radius:50%;
+            animation:spin .7s linear infinite;
+        }
+
+        @keyframes spin { to { transform:rotate(360deg); } }
+    </style>
 </head>
 <body>
 
-<h1 style="color: white">Controle de Impressões - Leste 3</h1>
-<h3 style="color: white; font-style: italic;">Desenvolvido pelo Setor de Tecnologia</h3>
-<div id="cards">Carregando dados...</div>
+<header>
+    <div class="header-title">🖨️ Controle de Impressões — Leste 3</div>
+    <div class="header-right">
+        <div id="badge-update">
+            <span class="dot"></span>
+            <span id="ultima-atualizacao">Carregando...</span>
+        </div>
+        <div id="countdown-wrap">
+            <div id="countdown-bar-outer">
+                <div id="countdown-bar-inner" style="width:100%"></div>
+            </div>
+            <span id="countdown-text">5:00</span>
+        </div>
+    </div>
+</header>
 
-<div class="relatorio-container">
-    <h2>📆 Relatório Mensal por Impressora</h2>
-    <div class="filtro-mes">
-        <label>Mês:</label>
-        <select id="mesSelector"></select>
-        <button class="btn-pdf" id="exportarPDF">📄 Exportar este mês em PDF</button>
+<section id="cards-section">
+    <div id="cards">
+        <div id="loading"><div class="spinner"></div> Carregando dados...</div>
     </div>
-    <div class="grafico-mensal">
-        <canvas id="graficoMensal"></canvas>
-    </div>
-    <div class="tabela-relatorio">
+</section>
+
+<section id="relatorio-section">
+    <div class="section-label">Relatório mensal</div>
+    <div class="relatorio-container">
+        <div class="filtro-mes">
+            <label>Mês:</label>
+            <select id="mesSelector"></select>
+            <button class="btn-pdf" id="exportarPDF">📄 Exportar PDF</button>
+        </div>
+        <div class="grafico-mensal">
+            <canvas id="graficoMensal"></canvas>
+        </div>
         <table id="tabelaMensal">
-            <thead><tr><th>Impressora</th><th>Consumo no mês</th><th>Cota total</th><th>% da cota</th></tr></thead>
+            <thead>
+                <tr>
+                    <th>Impressora</th>
+                    <th>Consumo no mês</th>
+                    <th>Cota total</th>
+                    <th>% da cota</th>
+                </tr>
+            </thead>
             <tbody><tr><td colspan="4">Selecione um mês</td></tr></tbody>
         </table>
     </div>
-</div>
+</section>
 
 <script>
-// Configuração das impressoras
 const impressoras = [
-    { nome: "CAF", tag: "IMP2", cota: 5000 },
+    { nome: "CAF",         tag: "IMP2", cota: 5000 },
     { nome: "NÚCLEO PED.", tag: "IMP1", cota: 5000 },
-    { nome: "CRH", tag: "IMP3", cota: 5000 },
-    { nome: "GABINETE", tag: "IMP4", cota: 3000 }
+    { nome: "CRH",         tag: "IMP3", cota: 5000 },
+    { nome: "GABINETE",    tag: "IMP4", cota: 3000 }
 ];
 
-let currentRegistros = [];
-let currentMeses = [];
+const REFRESH_INTERVAL = 5 * 60 * 1000;
+const REFRESH_SECS     = 300;
+
+let currentRegistros      = [];
+let currentMeses          = [];
 let currentMesSelecionado = null;
 let graficoMensalInstance = null;
-let graficosCards = [];   // guarda os objetos Chart de cada card
+let graficosCards         = [];
+let countdownInterval     = null;
+let refreshTimeout        = null;
 
-// Função para mostrar erros na tela
-function mostrarErro(mensagem) {
-    const container = document.getElementById("cards");
-    container.innerHTML = `<div class="erro">⚠️ ${mensagem}</div>`;
-    console.error(mensagem);
-}
-
-// Parse do contador.txt
- function parseLinhasContador(linhas) {
+function parseLinhasContador(linhas) {
     const registros = [];
     for (let linha of linhas) {
         linha = linha.trim();
@@ -67,7 +465,7 @@ function mostrarErro(mensagem) {
         if (partes.length < 4) continue;
         const tag = partes[0];
         const [dia, mes, ano] = partes[1].split('/');
-        const valor = parseInt(partes[3]);
+        const valor = parseInt(partes[partes.length - 1]);
         if (isNaN(valor)) continue;
         const dataObj = new Date(parseInt(ano), parseInt(mes)-1, parseInt(dia));
         if (isNaN(dataObj.getTime())) continue;
@@ -77,103 +475,151 @@ function mostrarErro(mensagem) {
     return registros;
 }
 
-// Uso total para cards
-function calcularUsoTotal(registros, tag) {
-    const filtrados = registros.filter(r => r.tag === tag);
-    if (filtrados.length < 2) return 0;
-    return Math.max(0, filtrados[filtrados.length-1].valor - filtrados[0].valor);
-    
-}
-
-// Meses únicos disponíveis
 function obterMesesUnicos(registros) {
     const mapa = new Map();
     for (const r of registros) {
         const ano = r.dataObj.getFullYear();
-        const mes = r.dataObj.getMonth() + 1;
+        const mes = r.dataObj.getMonth()+1;
         const key = `${ano}-${mes}`;
         if (!mapa.has(key)) {
-            const nomeMes = r.dataObj.toLocaleString('pt-BR', { month: 'long' });
-            const rotulo = `${nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1)} ${ano}`;
-            mapa.set(key, { ano, mes, rotulo });
+            const nm = r.dataObj.toLocaleString('pt-BR', { month:'long' });
+            mapa.set(key, { ano, mes, rotulo: `${nm[0].toUpperCase()}${nm.slice(1)} ${ano}` });
         }
     }
-    return Array.from(mapa.values()).sort((a,b) => (a.ano - b.ano) || (a.mes - b.mes));
+    return Array.from(mapa.values()).sort((a,b)=>(a.ano-b.ano)||(a.mes-b.mes));
 }
 
-// Consumo em um mês específico
 function consumoMensalPorTag(registros, tag, ano, mes) {
-    const filtrados = registros.filter(r => r.tag === tag && r.dataObj.getFullYear() === ano && (r.dataObj.getMonth()+1) === mes);
-    if (filtrados.length === 0) return 0;
-    return Math.max(0, filtrados[filtrados.length-1].valor - filtrados[0].valor);
+    const f = registros.filter(r =>
+        r.tag === tag &&
+        r.dataObj.getFullYear() === ano &&
+        (r.dataObj.getMonth()+1) === mes
+    );
+    if (!f.length) return 0;
+    return Math.max(0, f[f.length-1].valor - f[0].valor);
 }
+
+function statusClass(uso, cota) {
+    if (uso >= cota)      return 'limit';
+    if (uso >= cota*.8)   return 'warn';
+    return 'ok';
+}
+
+function statusLabel(uso, cota) {
+    if (uso >= cota)      return '🚨 LIMITE';
+    if (uso >= cota*.8)   return '⚠️ ATENÇÃO';
+    return '✅ OK';
+}
+
+function renderCards() {
+    const container = document.getElementById('cards');
+    container.innerHTML = '';
+    graficosCards = [];
+
+    impressoras.forEach((imp, i) => {
+        const card = document.createElement('div');
+        card.className = 'card ok';
+        card.id = `card-${i}`;
+        card.innerHTML = `
+            <div class="card-header">
+                <div class="card-name">${imp.nome}</div>
+                <div class="card-status ok" id="status-${i}">✅ OK</div>
+            </div>
+            <div class="card-donut">
+                <canvas id="cardChart${i}"></canvas>
+                <div class="donut-center">
+                    <div class="donut-perc ok" id="perc-${i}">0%</div>
+                    <div class="donut-label">da cota</div>
+                </div>
+            </div>
+            <div class="progress-wrap">
+                <div class="progress-bar ok" id="bar-${i}" style="width:0%"></div>
+            </div>
+            <div class="card-meta">
+                <span>Usado: <strong id="val-${i}">0</strong></span>
+                <span>Restante: <strong id="restante-${i}">${imp.cota.toLocaleString('pt-BR')}</strong></span>
+                <span>Cota: <strong>${imp.cota.toLocaleString('pt-BR')}</strong></span>
+            </div>
+        `;
+        container.appendChild(card);
+        graficosCards.push(null);
+    });
+}
+
 function atualizarCardsPorMes(ano, mes) {
     if (!currentRegistros.length) return;
-
-    // Para cada impressora, calcula consumo no mês
-    const consumosMensais = impressoras.map(imp => {
-        const consumo = consumoMensalPorTag(currentRegistros, imp.tag, ano, mes);
-        return { ...imp, consumo };
-    });
-
-    // Percorre todos os cards existentes
-    const cards = document.querySelectorAll('.card');
-    cards.forEach((card, idx) => {
-        const imp = consumosMensais[idx];
-        const uso = imp.consumo;
-        const cota = imp.cota;
+    impressoras.forEach((imp, i) => {
+        const uso      = consumoMensalPorTag(currentRegistros, imp.tag, ano, mes);
+        const cota     = imp.cota;
         const restante = Math.max(0, cota - uso);
-        const perc = cota > 0 ? Math.round((uso / cota) * 100) : 0;
-        const alerta = uso >= cota ? "🚨 LIMITE ATINGIDO" : (uso >= cota*0.8 ? "⚠️ Próximo do limite" : "✅ OK");
+        const perc     = cota > 0 ? Math.min(100, Math.round((uso/cota)*100)) : 0;
+        const st       = statusClass(uso, cota);
 
-        // Atualiza textos dentro do card
-        card.querySelector("h2").innerText = `${perc}% da cota`;
-        const paragrafos = card.querySelectorAll("p");
-        paragrafos[0].innerHTML = `Usado no mês: <b>${uso.toLocaleString('pt-BR')}</b>`;
-        paragrafos[paragrafos.length - 1].innerText = alerta; // o último p é o alerta
+        document.getElementById(`card-${i}`).className     = `card ${st}`;
+        document.getElementById(`val-${i}`).textContent    = uso.toLocaleString('pt-BR');
+        document.getElementById(`restante-${i}`).textContent = restante.toLocaleString('pt-BR');
 
-        // Destroi gráfico antigo se existir
-        const canvas = card.querySelector("canvas");
-        if (graficosCards[idx]) {
-            graficosCards[idx].destroy();
-        }
-        // Cria gráfico novo
-        const ctx = canvas.getContext('2d');
-        graficosCards[idx] = new Chart(ctx, {
+        const percEl = document.getElementById(`perc-${i}`);
+        percEl.textContent = `${perc}%`;
+        percEl.className   = `donut-perc ${st}`;
+
+        const stEl = document.getElementById(`status-${i}`);
+        stEl.textContent = statusLabel(uso, cota);
+        stEl.className   = `card-status ${st}`;
+
+        const barEl = document.getElementById(`bar-${i}`);
+        barEl.style.width = `${perc}%`;
+        barEl.className   = `progress-bar ${st}`;
+
+        const colors = {
+            ok:    ['#22c55e','#18223a'],
+            warn:  ['#f59e0b','#18223a'],
+            limit: ['#ef4444','#18223a']
+        };
+
+        const canvas = document.getElementById(`cardChart${i}`);
+        if (graficosCards[i]) graficosCards[i].destroy();
+        graficosCards[i] = new Chart(canvas.getContext('2d'), {
             type: 'doughnut',
             data: {
-                labels: ['Usado no mês', 'Restante'],
                 datasets: [{
-                    data: [uso, restante],
-                    backgroundColor: ['#e07a5f', '#81b29a']
+                    data: [uso, Math.max(0, restante)],
+                    backgroundColor: colors[st],
+                    borderWidth: 0,
+                    borderRadius: 6
                 }]
+            },
+            options: {
+                cutout: '68%',
+                plugins: { legend:{ display:false }, tooltip:{ enabled:false } },
+                animation: { duration:500 }
             }
         });
     });
 }
 
-// Atualizar relatório ao mudar o mês
 function atualizarRelatorioMensal(mesObj) {
     if (!mesObj || !currentRegistros.length) return;
     currentMesSelecionado = mesObj;
     const { ano, mes, rotulo } = mesObj;
+
     const dados = impressoras.map(imp => ({
-        nome: imp.nome,
+        nome:    imp.nome,
         consumo: consumoMensalPorTag(currentRegistros, imp.tag, ano, mes),
-        cota: imp.cota
+        cota:    imp.cota
     }));
-    // Preenche tabela
-    const tbody = document.querySelector("#tabelaMensal tbody");
-    tbody.innerHTML = "";
+
+    const tbody = document.querySelector('#tabelaMensal tbody');
+    tbody.innerHTML = '';
     for (const d of dados) {
-        const percent = d.cota > 0 ? ((d.consumo / d.cota) * 100).toFixed(1) : 0;
+        const pct = d.cota > 0 ? ((d.consumo/d.cota)*100).toFixed(1) : 0;
         const row = tbody.insertRow();
-        row.insertCell(0).innerText = d.nome;
-        row.insertCell(1).innerText = d.consumo.toLocaleString('pt-BR');
-        row.insertCell(2).innerText = d.cota.toLocaleString('pt-BR');
-        row.insertCell(3).innerText = `${percent}%`;
+        row.insertCell(0).textContent = d.nome;
+        row.insertCell(1).textContent = d.consumo.toLocaleString('pt-BR');
+        row.insertCell(2).textContent = d.cota.toLocaleString('pt-BR');
+        row.insertCell(3).textContent = `${pct}%`;
     }
-    // Atualiza gráfico
+
     const ctx = document.getElementById('graficoMensal').getContext('2d');
     if (graficoMensalInstance) graficoMensalInstance.destroy();
     graficoMensalInstance = new Chart(ctx, {
@@ -181,126 +627,135 @@ function atualizarRelatorioMensal(mesObj) {
         data: {
             labels: dados.map(d => d.nome),
             datasets: [{
-                label: `Consumo em ${rotulo}`,
+                label: `Consumo — ${rotulo}`,
                 data: dados.map(d => d.consumo),
-                backgroundColor: '#2c7da0'
+                backgroundColor: dados.map(d => {
+                    const s = statusClass(d.consumo, d.cota);
+                    return s==='ok' ? '#3b82f6' : s==='warn' ? '#f59e0b' : '#ef4444';
+                }),
+                borderRadius: 6,
+                borderSkipped: false
             }]
         },
-        options: { responsive: true, maintainAspectRatio: true, scales: { y: { beginAtZero: true } } }
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { labels:{ color:'#7a90b0', font:{ family:'Inter', size:12 } } },
+                tooltip: { callbacks:{ label: c => ` ${c.parsed.y.toLocaleString('pt-BR')} páginas` } }
+            },
+            scales: {
+                x: { ticks:{ color:'#4a6080' }, grid:{ color:'#1e2d4a' } },
+                y: { beginAtZero:true, ticks:{ color:'#4a6080' }, grid:{ color:'#1e2d4a' } }
+            }
+        }
     });
 }
 
-// Popular select de meses
 function popularSelectMeses(meses) {
-    const select = document.getElementById("mesSelector");
-    if (!select) return;
-    select.innerHTML = "";
+    const select = document.getElementById('mesSelector');
+    select.innerHTML = '';
     meses.forEach((m, idx) => {
-        const option = document.createElement("option");
-        option.value = idx;
-        option.textContent = m.rotulo;
-        select.appendChild(option);
+        const opt = document.createElement('option');
+        opt.value = idx;
+        opt.textContent = m.rotulo;
+        select.appendChild(opt);
     });
     if (meses.length) {
         select.selectedIndex = meses.length - 1;
-        atualizarRelatorioMensal(meses[select.selectedIndex]);
-        select.addEventListener("change", () => {
-    const idx = parseInt(select.value);
-    if (!isNaN(idx)) {
-        const mesObj = meses[idx];
-        atualizarRelatorioMensal(mesObj);
-        atualizarCardsPorMes(mesObj.ano, mesObj.mes);  // ← nova linha
+        const ultimo = meses[meses.length - 1];
+        atualizarRelatorioMensal(ultimo);
+        atualizarCardsPorMes(ultimo.ano, ultimo.mes);
     }
-});
-    }
+    select.addEventListener('change', () => {
+        const idx = parseInt(select.value);
+        if (!isNaN(idx)) {
+            atualizarRelatorioMensal(meses[idx]);
+            atualizarCardsPorMes(meses[idx].ano, meses[idx].mes);
+        }
+    });
 }
 
-// Renderizar cards de uso total
-function renderCards(registros) {
-    const container = document.getElementById("cards");
-    container.innerHTML = "";
-    for (let i = 0; i < impressoras.length; i++) {
-        const imp = impressoras[i];
-        // Uso inicial (só para exibir algo, depois será atualizado)
-        const uso = 0;
-        const restante = imp.cota;
-        const perc = 0;
-        const alerta = "✅ OK";
-        const canvasId = `cardChart${i}`;
-        const card = document.createElement("div");
-        card.className = "card";
-        card.innerHTML = `
-            <h1>${imp.nome}</h1>
-            <h2 style="color: #a51b0b">0% da cota</h2>
-            <p>Usado no mês: <b>0</b></p>
-            <p>Restante: <b>${restante.toLocaleString('pt-BR')}</b></p>
-            <p>Cota: ${imp.cota.toLocaleString('pt-BR')}</p>
-            <p class="alerta">${alerta}</p>
-            <canvas id="${canvasId}" width="150" height="150"></canvas>
-        `;
-        container.appendChild(card);
-    }
+function registrarAtualizacao() {
+    const str = new Date().toLocaleString('pt-BR', {
+        day:'2-digit', month:'2-digit', year:'numeric',
+        hour:'2-digit', minute:'2-digit', second:'2-digit'
+    });
+    document.getElementById('ultima-atualizacao').textContent = `Atualizado: ${str}`;
 }
 
-// Exportar PDF (captura o relatório mensal)
-document.getElementById("exportarPDF").addEventListener("click", async function() {
-    const element = document.querySelector(".relatorio-container");
-    if (!element) return alert("Elemento do relatório não encontrado.");
+function iniciarCountdown() {
+    if (countdownInterval) clearInterval(countdownInterval);
+    let restante = REFRESH_SECS;
+    const bar  = document.getElementById('countdown-bar-inner');
+    const text = document.getElementById('countdown-text');
+    function tick() {
+        const m = Math.floor(restante/60), s = restante%60;
+        text.textContent = `${m}:${String(s).padStart(2,'0')}`;
+        bar.style.width  = `${(restante/REFRESH_SECS)*100}%`;
+        if (restante <= 0) clearInterval(countdownInterval);
+        restante--;
+    }
+    tick();
+    countdownInterval = setInterval(tick, 1000);
+}
+
+function carregarDados(primeiraVez = false) {
+    fetch(`contador.txt?_=${Date.now()}`)
+        .then(res => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}: contador.txt não encontrado.`);
+            return res.text();
+        })
+        .then(text => {
+            currentRegistros = parseLinhasContador(text.split(/\r?\n/));
+            if (!currentRegistros.length) throw new Error('Nenhum registro válido encontrado.');
+
+            if (primeiraVez) renderCards();
+
+            currentMeses = obterMesesUnicos(currentRegistros);
+
+            if (currentMeses.length) {
+                if (primeiraVez) {
+                    popularSelectMeses(currentMeses);
+                } else {
+                    const select = document.getElementById('mesSelector');
+                    const idx = Math.min(parseInt(select.value)||0, currentMeses.length-1);
+                    atualizarRelatorioMensal(currentMeses[idx]);
+                    atualizarCardsPorMes(currentMeses[idx].ano, currentMeses[idx].mes);
+                }
+            }
+
+            registrarAtualizacao();
+            iniciarCountdown();
+        })
+        .catch(err => {
+            if (primeiraVez)
+                document.getElementById('cards').innerHTML = `<div class="erro">⚠️ ${err.message}</div>`;
+            console.error(err);
+        })
+        .finally(() => {
+            if (refreshTimeout) clearTimeout(refreshTimeout);
+            refreshTimeout = setTimeout(() => carregarDados(false), REFRESH_INTERVAL);
+        });
+}
+
+document.getElementById('exportarPDF').addEventListener('click', async function () {
+    const el  = document.querySelector('.relatorio-container');
     const btn = this;
-    const textoOriginal = btn.innerText;
-    btn.innerText = "⏳ Gerando PDF...";
+    const txt = btn.textContent;
+    btn.textContent = '⏳ Gerando...';
     btn.disabled = true;
     try {
-        const canvas = await html2canvas(element, { scale: 2, logging: false });
-        const imgData = canvas.toDataURL('image/png');
+        const c = await html2canvas(el, { scale:2, logging:false, backgroundColor:'#0f1623' });
         const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const imgWidth = 190;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
-        const nomeArquivo = `relatorio_${currentMesSelecionado?.rotulo.replace(/ /g, '_') || 'mensal'}.pdf`;
-        pdf.save(nomeArquivo);
-    } catch (err) {
-        console.error(err);
-        alert("Erro ao gerar PDF: " + err.message);
-    } finally {
-        btn.innerText = textoOriginal;
-        btn.disabled = false;
-    }
+        const pdf = new jsPDF('p','mm','a4');
+        pdf.addImage(c.toDataURL('image/png'),'PNG',10,10,190,(c.height*190)/c.width);
+        pdf.save(`relatorio_${currentMesSelecionado?.rotulo.replace(/ /g,'_')||'mensal'}.pdf`);
+    } catch(e) { alert('Erro ao gerar PDF: '+e.message); }
+    finally { btn.textContent = txt; btn.disabled = false; }
 });
 
-// CARREGAR DADOS
-fetch("contador.txt")
-    .then(res => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}: contador.txt não encontrado. Verifique se o arquivo está no mesmo diretório.`);
-        return res.text();
-    })
-    .then(text => {
-        const linhas = text.split(/\r?\n/);
-        currentRegistros = parseLinhasContador(linhas);
-        if (currentRegistros.length === 0) throw new Error("Nenhum registro válido encontrado no contador.txt");
-        
-        // 1. Cria a estrutura dos cards (sem dados ainda)
-        renderCards(currentRegistros);
-        
-        // 2. Descobre os meses disponíveis
-        currentMeses = obterMesesUnicos(currentRegistros);
-        
-        if (currentMeses.length) {
-            // 3. Popula o select e já atualiza relatório + gráficos com o último mês
-            popularSelectMeses(currentMeses);
-            
-            // 4. Atualiza os cards com o último mês (para não ficarem zerados)
-            const ultimoMes = currentMeses[currentMeses.length - 1];
-            atualizarCardsPorMes(ultimoMes.ano, ultimoMes.mes);
-        } else {
-            document.querySelector("#tabelaMensal tbody").innerHTML = '<td><td colspan="4">Nenhum mês identificado nos dados</td></tr>';
-        }
-    })
-    .catch(err => {
-        mostrarErro(err.message);
-        document.querySelector("#tabelaMensal tbody").innerHTML = `<tr><td colspan="4">Erro ao carregar dados: ${err.message}</td></tr>`;
-    });
+carregarDados(true);
 </script>
 </body>
 </html>
