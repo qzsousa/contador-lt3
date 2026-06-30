@@ -9,7 +9,7 @@ echo ============================================
 echo.
 :: ── CONFIGURACOES ──────────────────────────────────────
 set REPO=https://github.com/qzsousa/contador-lt3.git
-set PASTA=C:\contador-lt3-master\contador-lt3-master\frontend
+set PASTA=C:\contador-lt3\frontend
 set PORTA=8080
 set LOG=%PASTA%\startup_log.txt
 
