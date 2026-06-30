@@ -1,6 +1,6 @@
 @echo off
 
-set SNMP=C:\snmp2\snmpget.exe
+set SNMP=C:\coletar-lt3\backend\snmpget.exe
 set OID=1.3.6.1.2.1.43.10.2.1.4.1.1
 set ARQ=C:\Impressoras\contador.txt
 
