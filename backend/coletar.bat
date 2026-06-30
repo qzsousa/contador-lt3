@@ -1,8 +1,8 @@
 @echo off
 
-set SNMP=C:\snmp2\snmpget.exe
+set SNMP=C:\contador-lt3\backend\snmpget.exe
 set OID=1.3.6.1.2.1.43.10.2.1.4.1.1
-set ARQ=C:\Impressoras\contador.txt
+set ARQ=C:\contador-lt3\backend\impressora\contador.txt
 
 :: DATA E HORA LIMPA
 for /f "tokens=1,2 delims= " %%a in ("%date% %time%") do (
