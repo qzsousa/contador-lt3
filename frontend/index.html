@@ -465,9 +465,10 @@ function parseLinhasContador(linhas) {
         if (partes.length < 4) continue;
         const tag = partes[0];
         const [dia, mes, ano] = partes[1].split('/');
+        const [hh, mm] = (partes[2] || '00:00').split(':').map(n => parseInt(n) || 0);
         const valor = parseInt(partes[partes.length - 1]);
         if (isNaN(valor)) continue;
-        const dataObj = new Date(parseInt(ano), parseInt(mes)-1, parseInt(dia));
+        const dataObj = new Date(parseInt(ano), parseInt(mes)-1, parseInt(dia), hh, mm);
         if (isNaN(dataObj.getTime())) continue;
         registros.push({ tag, dataObj, valor });
     }
@@ -676,12 +677,13 @@ function popularSelectMeses(meses) {
     });
 }
 
-function registrarAtualizacao() {
-    const str = new Date().toLocaleString('pt-BR', {
+function registrarAtualizacao(dataRef) {
+    const d = dataRef instanceof Date ? dataRef : new Date();
+    const str = d.toLocaleString('pt-BR', {
         day:'2-digit', month:'2-digit', year:'numeric',
-        hour:'2-digit', minute:'2-digit', second:'2-digit'
+        hour:'2-digit', minute:'2-digit'
     });
-    document.getElementById('ultima-atualizacao').textContent = `Atualizado: ${str}`;
+    document.getElementById('ultima-atualizacao').textContent = `Última coleta: ${str}`;
 }
 
 function iniciarCountdown() {
@@ -725,7 +727,8 @@ function carregarDados(primeiraVez = false) {
                 }
             }
 
-            registrarAtualizacao();
+            const ultimoRegistro = currentRegistros[currentRegistros.length - 1];
+            registrarAtualizacao(ultimoRegistro.dataObj);
             iniciarCountdown();
         })
         .catch(err => {
