@@ -11,24 +11,27 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg:      #080c14;
-            --surface: #0f1623;
-            --surface2:#18223a;
-            --border:  #1e2d4a;
-            --accent:  #3b82f6;
-            --success: #22c55e;
-            --warning: #f59e0b;
-            --danger:  #ef4444;
-            --text:    #f0f4ff;
-            --muted:   #4a6080;
-            --dim:     #7a90b0;
+            --bg:      #f4f7fb;
+            --surface: #ffffff;
+            --surface2:#eef3f8;
+            --border:  #d9e2ec;
+            --accent:  #2563eb;
+            --success: #16a34a;
+            --warning: #d97706;
+            --danger:  #dc2626;
+            --text:    #172033;
+            --muted:   #5f7188;
+            --dim:     #334155;
+            --track:   #e7edf5;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
             font-family: 'Inter', sans-serif;
-            background: var(--bg);
+            background:
+                radial-gradient(circle at top left, rgba(37,99,235,.08), transparent 34%),
+                var(--bg);
             color: var(--text);
             min-height: 100vh;
             display: flex;
@@ -37,7 +40,7 @@
 
         /* ── HEADER ── */
         header {
-            background: var(--surface);
+            background: rgba(255,255,255,.92);
             border-bottom: 1px solid var(--border);
             padding: 12px 32px;
             display: flex;
@@ -45,6 +48,8 @@
             justify-content: space-between;
             gap: 12px;
             flex-shrink: 0;
+            box-shadow: 0 1px 0 rgba(15,23,42,.03), 0 10px 30px rgba(15,23,42,.06);
+            backdrop-filter: blur(12px);
         }
 
         .header-title {
@@ -91,7 +96,7 @@
 
         #countdown-bar-outer {
             width: 72px; height: 3px;
-            background: var(--border);
+            background: var(--track);
             border-radius: 2px;
             overflow: hidden;
         }
@@ -136,6 +141,7 @@
             overflow: hidden;
             transition: border-color .25s;
             min-height: 0;
+            box-shadow: 0 14px 38px rgba(15,23,42,.08);
         }
 
         .card::before {
@@ -179,9 +185,9 @@
             white-space: nowrap;
         }
 
-        .card-status.ok    { background:#16a34a20; color:var(--success); border:1px solid #16a34a50; }
-        .card-status.warn  { background:#d9770620; color:var(--warning); border:1px solid #d9770650; }
-        .card-status.limit { background:#dc262620; color:var(--danger);  border:1px solid #dc262650; }
+        .card-status.ok    { background:#dcfce7; color:#15803d; border:1px solid #86efac; }
+        .card-status.warn  { background:#fef3c7; color:#b45309; border:1px solid #fcd34d; }
+        .card-status.limit { background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5; }
 
         /* DONUT — elemento principal, cresce para preencher o card */
         .card-donut {
@@ -230,7 +236,7 @@
 
         /* Barra de progresso */
         .progress-wrap {
-            background: var(--surface2);
+            background: var(--track);
             border-radius: 6px;
             height: 8px;
             overflow: hidden;
@@ -288,6 +294,7 @@
             border: 1px solid var(--border);
             border-radius: 18px;
             padding: 24px;
+            box-shadow: 0 14px 38px rgba(15,23,42,.07);
         }
 
         .filtro-mes {
@@ -358,8 +365,8 @@
 
         .erro {
             color:var(--danger);
-            background:#dc262610;
-            border:1px solid #dc262630;
+            background:#fee2e2;
+            border:1px solid #fca5a5;
             padding:14px 18px;
             border-radius:10px;
             font-size:.9rem;
@@ -573,9 +580,9 @@ function atualizarCardsPorMes(ano, mes) {
         barEl.className   = `progress-bar ${st}`;
 
         const colors = {
-            ok:    ['#22c55e','#18223a'],
-            warn:  ['#f59e0b','#18223a'],
-            limit: ['#ef4444','#18223a']
+            ok:    ['#16a34a','#e7edf5'],
+            warn:  ['#d97706','#e7edf5'],
+            limit: ['#dc2626','#e7edf5']
         };
 
         const canvas = document.getElementById(`cardChart${i}`);
@@ -632,7 +639,7 @@ function atualizarRelatorioMensal(mesObj) {
                 data: dados.map(d => d.consumo),
                 backgroundColor: dados.map(d => {
                     const s = statusClass(d.consumo, d.cota);
-                    return s==='ok' ? '#3b82f6' : s==='warn' ? '#f59e0b' : '#ef4444';
+                    return s==='ok' ? '#2563eb' : s==='warn' ? '#d97706' : '#dc2626';
                 }),
                 borderRadius: 6,
                 borderSkipped: false
@@ -642,12 +649,12 @@ function atualizarRelatorioMensal(mesObj) {
             responsive: true,
             maintainAspectRatio: true,
             plugins: {
-                legend: { labels:{ color:'#7a90b0', font:{ family:'Inter', size:12 } } },
+                legend: { labels:{ color:'#334155', font:{ family:'Inter', size:12 } } },
                 tooltip: { callbacks:{ label: c => ` ${c.parsed.y.toLocaleString('pt-BR')} páginas` } }
             },
             scales: {
-                x: { ticks:{ color:'#4a6080' }, grid:{ color:'#1e2d4a' } },
-                y: { beginAtZero:true, ticks:{ color:'#4a6080' }, grid:{ color:'#1e2d4a' } }
+                x: { ticks:{ color:'#5f7188' }, grid:{ color:'#d9e2ec' } },
+                y: { beginAtZero:true, ticks:{ color:'#5f7188' }, grid:{ color:'#d9e2ec' } }
             }
         }
     });
@@ -749,7 +756,7 @@ document.getElementById('exportarPDF').addEventListener('click', async function 
     btn.textContent = '⏳ Gerando...';
     btn.disabled = true;
     try {
-        const c = await html2canvas(el, { scale:2, logging:false, backgroundColor:'#0f1623' });
+        const c = await html2canvas(el, { scale:2, logging:false, backgroundColor:'#ffffff' });
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF('p','mm','a4');
         pdf.addImage(c.toDataURL('image/png'),'PNG',10,10,190,(c.height*190)/c.width);
